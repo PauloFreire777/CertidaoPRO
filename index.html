@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gerador de Certidão de Regularidade de Inventário</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Lora:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <!-- Bibliotecas Externas -->
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <!-- Ícones (Lucide) -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+
+    <div id="app" class="app-container" :class="{ 'loading': isLoading }">
+        <!-- Cabeçalho Fixo -->
+        <header class="main-header">
+            <div class="logo">
+                <div class="logo-graphic">
+                    <span class="logo-text-main">Certidão</span><span class="logo-text-pro">PRO</span>
+                </div>
+                <p class="comarca-text">VARA ÚNICA DA COMARCA DE NOVA RESENDE/MG</p>
+            </div>
+            <div class="toolbar">
+                <button @click="resetForm" class="btn-tertiary" title="Nova Certidão"><i data-lucide="file-plus-2"></i> Nova</button>
+                <button @click="exportState" class="btn-secondary" title="Salvar Certidão como JSON"><i data-lucide="save"></i> Salvar</button>
+                <button @click="triggerFileInput" class="btn-secondary" title="Carregar Certidão de um arquivo JSON"><i data-lucide="folder-open"></i> Carregar</button>
+                <input type="file" ref="fileInput" @change="importState" accept=".json" style="display: none;">
+                <button @click="generatePdf" class="btn-primary" title="Gerar PDF Final"><i data-lucide="printer"></i> Gerar PDF</button>
+                <span class="autosave-indicator" :class="{ 'visible': showAutosaveIndicator }">Salvo!</span>
+            </div>
+        </header>
+
+        <main class="main-content">
+            <!-- Painel do Formulário (Esquerda) -->
+            <div class="form-panel">
+                <div class="tabs-container">
+                    <div class="tabs-nav">
+                        <button v-for="(tab, index) in tabs" :key="index" @click="activeTab = index" :class="{ 'active': activeTab === index }">
+                           <span class="tab-number">{{ index + 1 }}</span> {{ tab }}
+                        </button>
+                    </div>
+                    <div class="tabs-content">
+                        <!-- Aba 1: Dados do Processo -->
+                        <div v-show="activeTab === 0" class="tab-pane">
+                            <h2>1. Dados do Processo</h2>
+                            <div class="form-group">
+                                <label>Número do Processo <span class="required">*</span></label>
+                                <input type="text" v-model="state.processo.numero" placeholder="Ex: 5001234-56.2023.8.13.0024">
+                            </div>
+                            <div class="form-group checkbox-group">
+                                <input type="checkbox" id="cumulativo" v-model="state.processo.cumulativo">
+                                <label for="cumulativo">Inventário Cumulativo</label>
+                            </div>
+                            <fieldset>
+                                <legend>Responsável pela Certidão</legend>
+                                <div class="form-group">
+                                    <label>Nome Completo <span class="required">*</span></label>
+                                    <input type="text" v-model="state.processo.responsavel.nome" placeholder="Nome de quem emite">
+                                </div>
+                                <div class="form-group">
+                                    <label>Cargo <span class="required">*</span></label>
+                                    <select v-model="state.processo.responsavel.cargo">
+                                        <option disabled value="">Selecione o cargo</option>
+                                        <option>Oficial(a) Judiciário(a)</option>
+                                        <option>Estagiário(a)</option>
+                                        <option>Assistente Administrativo(a)</option>
+                                    </select>
+                                </div>
+                            </fieldset>
+                        </div>
+
+                        <!-- Aba 2: Falecidos -->
+                        <div v-show="activeTab === 1" class="tab-pane">
+                            <h2>2. Dados dos Falecidos</h2>
+                            <div v-for="(falecido, index) in state.falecidos" :key="index" class="dynamic-card">
+                                <h4 class="card-title">Falecido(a) {{ index + 1 }}</h4>
+                                <button @click="removeFalecido(index)" class="btn-remove" title="Remover Falecido">×</button>
+                                <div class="grid-2">
+                                    <div class="form-group">
+                                        <label>Nome Completo <span class="required">*</span></label>
+                                        <input type="text" v-model="falecido.nome" placeholder="Nome do de cujus">
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Data do Falecimento <span class="required">*</span></label>
+                                        <input type="date" v-model="falecido.dataFalecimento">
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label>Documentos Pessoais (CPF/RG)</label>
+                                    <input type="text" v-model="falecido.documentos" placeholder="CPF e RG">
+                                </div>
+                                <div class="grid-2">
+                                    <div class="form-group">
+                                        <label>ID da Certidão de Óbito <span class="required">*</span></label>
+                                        <input type="text" v-model="falecido.idCertidaoObito" placeholder="ID do documento no sistema">
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Regime de Casamento</label>
+                                        <select v-model="falecido.regimeCasamento">
+                                            <option>Não se aplica</option>
+                                            <option>Comunhão Parcial de Bens</option>
+                                            <option>Comunhão Universal de Bens</option>
+                                            <option>Separação Total de Bens</option>
+                                            <option>Participação Final nos Aquestos</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                            <button @click="addFalecido" class="btn-add"><i data-lucide="plus"></i> Adicionar Falecido</button>
+                        </div>
+                        
+                        <!-- Aba 3: Inventariante -->
+                        <div v-show="activeTab === 2" class="tab-pane">
+                            <h2>3. Inventariante</h2>
+                             <div class="dynamic-card">
+                                <div class="form-group">
+                                    <label>Nome Completo <span class="required">*</span></label>
+                                    <input type="text" v-model="state.inventariante.nome">
+                                </div>
+                                <div class="form-group">
+                                    <label>Parentesco <span class="required">*</span></label>
+                                    <input type="text" v-model="state.inventariante.parentesco" placeholder="Ex: Cônjuge, Filho(a)">
+                                </div>
+                                <div class="form-group">
+                                    <label>Documentos Pessoais (CPF/RG) <span class="required">*</span></label>
+                                    <input type="text" v-model="state.inventariante.documentos">
+                                </div>
+                                <div class="grid-2">
+                                    <div class="form-group">
+                                        <label>ID da Procuração</label>
+                                        <input type="text" v-model="state.inventariante.idProcuracao" placeholder="ID do documento">
+                                    </div>
+                                    <div class="form-group">
+                                        <label>ID do Termo de Compromisso <span class="required">*</span></label>
+                                        <input type="text" v-model="state.inventariante.idTermoCompromisso" placeholder="ID do documento">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Aba 4: Herdeiros -->
+                        <div v-show="activeTab === 3" class="tab-pane">
+                            <h2>4. Herdeiros e Sucessores</h2>
+                            <!-- Componente recursivo de Herdeiro/Representante -->
+                            <heir-form-group
+                                v-for="(herdeiro, hIndex) in state.herdeiros"
+                                :key="herdeiro.id"
+                                :heir="herdeiro"
+                                :index="hIndex"
+                                :is-representative="false"
+                                @remove="removeHerdeiro(hIndex)">
+                            </heir-form-group>
+                            <button @click="addHerdeiro" class="btn-add"><i data-lucide="plus"></i> Adicionar Herdeiro</button>
+                        </div>
+                        
+                        <!-- Aba 5: Bens e Valores -->
+                        <div v-show="activeTab === 4" class="tab-pane">
+                            <h2>5. Bens, Valores e Dívidas</h2>
+                            <!-- Sub-seções de bens -->
+                            <fieldset v-for="section in bensSections" :key="section.key">
+                                <legend>{{ section.title }}</legend>
+                                <div v-for="(item, index) in state.bens[section.key]" :key="index" class="dynamic-card">
+                                    <button @click="removeBem(section.key, index)" class="btn-remove-small" title="Remover Item">×</button>
+                                    <div v-for="field in section.fields" :key="field.model" class="form-group">
+                                        <label>{{ field.label }}</label>
+                                        <input v-if="!field.options" type="text" v-model="item[field.model]">
+                                        <select v-else v-model="item[field.model]">
+                                            <option v-for="opt in field.options" :key="opt">{{ opt }}</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <button @click="addBem(section.key)" class="btn-add-small"><i data-lucide="plus"></i> Adicionar {{ section.singular }}</button>
+                            </fieldset>
+                            <div v-if="hasIncapaz" class="conditional-section warning">
+                                <label class="bold">Avaliação de Bens para Incapazes</label>
+                                <div class="form-group">
+                                    <label>ID do Laudo de Avaliação Judicial</label>
+                                    <input type="text" v-model="state.bens.idLaudoAvaliacaoIncapaz" placeholder="ID do documento">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Aba 6: Documentos Processuais -->
+                        <div v-show="activeTab === 5" class="tab-pane">
+                            <h2>6. Documentos Processuais</h2>
+                             <div class="dynamic-card">
+                                <div v-for="doc in documentosProcessuais" :key="doc.model" class="form-group checkbox-group-vertical">
+                                    <div class="checkbox-line">
+                                        <input type="checkbox" :id="doc.model" v-model="state.documentosProcessuais[doc.model].presente">
+                                        <label :for="doc.model">{{ doc.label }}</label>
+                                    </div>
+                                    <input v-if="state.documentosProcessuais[doc.model].presente" type="text" v-model="state.documentosProcessuais[doc.model].id" placeholder="ID do documento">
+                                </div>
+                                <hr>
+                                <h4>Documentos Obrigatórios</h4>
+                                <div class="form-group">
+                                    <label>ID da Sentença Homologatória <span class="required">*</span></label>
+                                    <input type="text" v-model="state.documentosProcessuais.idSentenca" placeholder="ID do documento">
+                                </div>
+                                <div class="form-group">
+                                    <label>ID do Trânsito em Julgado <span class="required">*</span></label>
+                                    <input type="text" v-model="state.documentosProcessuais.idTransitoJulgado" placeholder="ID do documento">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Aba 7: Documentação Tributária -->
+                        <div v-show="activeTab === 6" class="tab-pane">
+                            <h2>7. Documentação Tributária</h2>
+                            <div v-if="!state.falecidos.length" class="placeholder-text">
+                                Adicione um falecido na Aba 2 para ver as opções.
+                            </div>
+                            <div v-for="(falecido, index) in state.documentacaoTributaria" :key="index" class="dynamic-card">
+                                <h4>Tributos de: <strong>{{ falecido.nomeFalecido || `Falecido ${index+1}` }}</strong></h4>
+                                <div class="form-group">
+                                    <label>Status do ITCD <span class="required">*</span></label>
+                                    <select v-model="falecido.statusItcd">
+                                        <option>Declarado e Pago</option>
+                                        <option>Declarado e Parcelado</option>
+                                        <option>Isento</option>
+                                        <option>Não Declarado</option>
+                                    </select>
+                                </div>
+                                <fieldset>
+                                    <legend>Certidões Negativas de Débito (CND)</legend>
+                                    <div class="grid-3">
+                                        <div class="form-group">
+                                            <label>CND Municipal</label>
+                                            <input type="text" v-model="falecido.idCndMunicipal" placeholder="ID/Link">
+                                        </div>
+                                        <div class="form-group">
+                                            <label>CND Estadual</label>
+                                            <input type="text" v-model="falecido.idCndEstadual" placeholder="ID/Link">
+                                        </div>
+                                        <div class="form-group">
+                                            <label>CND Federal</label>
+                                            <input type="text" v-model="falecido.idCndFederal" placeholder="ID/Link">
+                                        </div>
+                                    </div>
+                                </fieldset>
+                            </div>
+                        </div>
+
+                        <!-- Aba 8: Observações -->
+                        <div v-show="activeTab === 7" class="tab-pane">
+                            <h2>8. Observações Adicionais</h2>
+                            <div v-for="(obs, index) in state.observacoes" :key="index" class="dynamic-card">
+                                <button @click="removeObservacao(index)" class="btn-remove" title="Remover Observação">×</button>
+                                <div class="grid-2">
+                                    <div class="form-group">
+                                        <label>Título/Assunto</label>
+                                        <input type="text" v-model="obs.titulo">
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Relevância</label>
+                                        <select v-model="obs.relevancia">
+                                            <option>Baixa</option>
+                                            <option>Média</option>
+                                            <option>Alta</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label>Conteúdo <span class="required">*</span></label>
+                                    <textarea v-model="obs.conteudo" rows="3"></textarea>
+                                </div>
+                            </div>
+                            <button @click="addObservacao" class="btn-add"><i data-lucide="plus"></i> Adicionar Observação</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Navegação entre Abas -->
+                <div class="tab-navigation">
+                    <button v-show="activeTab > 0" @click="prevTab" class="btn-nav"><i data-lucide="arrow-left"></i> Anterior</button>
+                    <div class="spacer"></div>
+                    <button v-show="activeTab < tabs.length - 1" @click="nextTab" class="btn-nav-primary">Próximo <i data-lucide="arrow-right"></i></button>
+                </div>
+            </div>
+
+            <!-- Painel de Pré-visualização (Direita) -->
+            <div class="preview-panel-container">
+                <div id="preview-panel" class="preview-panel">
+                    <div class="preview-header">
+                        <div class="header-text">
+                            <p>PODER JUDICIÁRIO DO ESTADO DE MINAS GERAIS</p>
+                            <p class="comarca">VARA ÚNICA DA COMARCA DE NOVA RESENDE/MG</p>
+                        </div>
+                        <h1>CERTIDÃO DE REGULARIDADE</h1>
+                    </div>
+                    <div class="preview-content">
+                        <!-- Seção 1: Dados do Processo -->
+                        <div class="preview-section" v-if="state.processo.numero">
+                            <h3><i data-lucide="folder-kanban"></i> 1. Dados do Processo</h3>
+                            <div class="preview-card">
+                                <p><strong>Número do Processo:</strong><span>{{ state.processo.numero }}</span></p>
+                                <p v-if="state.processo.cumulativo"><strong>Tipo:</strong><span>Inventário Cumulativo</span></p>
+                            </div>
+                        </div>
+
+                        <!-- Seção 2: Falecidos -->
+                        <div class="preview-section" v-if="state.falecidos.length">
+                            <h3><i data-lucide="user-minus"></i> 2. De Cujus (Falecido/a/s)</h3>
+                            <div v-for="(f, i) in state.falecidos" :key="f.id" class="preview-card">
+                                <p><strong>Nome:</strong><span>{{ f.nome || 'Não informado' }}</span></p>
+                                <p><strong>Data do Falecimento:</strong><span>{{ formatDate(f.dataFalecimento) }}</span></p>
+                                <p><strong>Certidão de Óbito (ID):</strong><span>{{ f.idCertidaoObito || 'Não informado' }}</span></p>
+                            </div>
+                        </div>
+
+                        <!-- Seção 3: Inventariante -->
+                        <div class="preview-section" v-if="state.inventariante.nome">
+                            <h3><i data-lucide="user-check"></i> 3. Inventariante</h3>
+                            <div class="preview-card">
+                                <p><strong>Nome:</strong><span>{{ state.inventariante.nome }}</span></p>
+                                <p><strong>Parentesco:</strong><span>{{ state.inventariante.parentesco || 'Não informado' }}</span></p>
+                                <p><strong>Termo de Compromisso (ID):</strong><span>{{ state.inventariante.idTermoCompromisso || 'Não informado' }}</span></p>
+                                <div v-if="state.inventariante.idProcuracao" class="info-procuracao">
+                                    <p><strong>Procuração (ID):</strong><span>{{ state.inventariante.idProcuracao }}</span></p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Seção 4: Herdeiros -->
+                        <div class="preview-section" v-if="state.herdeiros.length">
+                            <h3><i data-lucide="users"></i> 4. Herdeiros e Sucessores</h3>
+                            <heir-preview-group :heirs="state.herdeiros" :level="0"></heir-preview-group>
+                        </div>
+
+                        <!-- Seção 5: Bens -->
+                        <div class="preview-section" v-if="hasBens">
+                            <h3><i data-lucide="gem"></i> 5. Relação de Bens, Direitos e Dívidas</h3>
+                            <div v-for="section in bensSections" :key="section.key">
+                                <div v-if="state.bens[section.key].length">
+                                    <h4>{{ section.title }}</h4>
+                                    <div v-for="(item, i) in state.bens[section.key]" :key="i" class="preview-card-small">
+                                       <p v-for="field in section.fields" :key="field.model">
+                                           <strong>{{ field.label }}:</strong> <span>{{ item[field.model] || 'N/A' }}</span>
+                                       </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Seção 6: Documentos Processuais -->
+                        <div class="preview-section" v-if="state.documentosProcessuais.idSentenca || checkedProcessualDocs.length">
+                            <h3><i data-lucide="file-text"></i> 6. Documentos Processuais</h3>
+                            <div class="preview-card">
+                                <p><strong>Sentença Homologatória (ID):</strong><span>{{ state.documentosProcessuais.idSentenca || 'Não informado' }}</span></p>
+                                <p><strong>Trânsito em Julgado (ID):</strong><span>{{ state.documentosProcessuais.idTransitoJulgado || 'Não informado' }}</span></p>
+                                <ul class="doc-list">
+                                    <li v-for="doc in checkedProcessualDocs" :key="doc.label">
+                                        <span>{{ doc.label }} (ID: {{ doc.id }})</span>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <!-- Seção 7: Documentação Tributária -->
+                        <div class="preview-section" v-if="state.documentacaoTributaria.length">
+                            <h3><i data-lucide="landmark"></i> 7. Regularidade Tributária</h3>
+                            <div v-for="(trib, i) in state.documentacaoTributaria" :key="i" class="preview-card">
+                                <p><strong>Referente a:</strong><span>{{ trib.nomeFalecido }}</span></p>
+                                <p><strong>Status ITCD:</strong><span>{{ trib.statusItcd }}</span></p>
+                                <p><strong>CNDs:</strong><span>{{ getCndsStatus(trib) }}</span></p>
+                            </div>
+                        </div>
+
+                        <!-- Seção 8: Observações -->
+                        <div class="preview-section" v-if="state.observacoes.length">
+                            <h3><i data-lucide="message-square-plus"></i> 8. Observações Adicionais</h3>
+                            <div v-for="(obs, i) in state.observacoes" :key="i" class="preview-card">
+                                <p><strong>{{ obs.titulo || 'Observação' }} (Relevância: {{ obs.relevancia }})</strong></p>
+                                <p class="obs-content"><span>{{ obs.conteudo }}</span></p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="preview-footer">
+                        <div class="signature-area">
+                            <div class="signature-line">
+                                <p class="signature-name">{{ state.processo.responsavel.nome || '_________________________________________' }}</p>
+                                <p class="signature-title">{{ state.processo.responsavel.cargo || 'Cargo do Responsável' }}</p>
+                            </div>
+                        </div>
+                        <div class="footer-info">
+                            <p>Este documento foi gerado eletronicamente pelo Sistema de Gerenciamento de Certidões.</p>
+                            <p>Data de Emissão: {{ emissionDate }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+        
+        <!-- Overlay de Carregamento -->
+        <div v-if="isLoading" class="loading-overlay">
+            <div class="spinner"></div>
+            <p>Gerando PDF, por favor aguarde...</p>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
