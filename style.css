@@ -120,7 +120,7 @@ html, body {
     overflow-y: auto;
     background-color: var(--preview-panel-bg);
     border-left: 1px solid var(--border-color);
-    transition: background-color 0.3s ease;
+    transition: background-color 0.3s ease, border-color 0.3s ease;
 }
 
 /* --- Barra de Ferramentas e Botões --- */
@@ -137,6 +137,8 @@ html, body {
     display: inline-flex;
     align-items: center;
     gap: 0.5rem;
+    background-color: var(--surface-color);
+    color: var(--text-light-color);
 }
 .toolbar button i {
     width: 16px;
@@ -155,10 +157,9 @@ html, body {
     transform: translateY(-1px);
 }
 
-.btn-secondary { background-color: var(--surface-color); color: var(--text-light-color); }
 .btn-secondary:hover { background-color: #f8f9f9; border-color: var(--primary-color); color: var(--primary-color); }
 
-.btn-tertiary { background: none; border: none; color: var(--text-light-color); }
+.btn-tertiary { background: none; border: none; }
 .btn-tertiary:hover { background-color: var(--bg-color); }
 
 .autosave-indicator { color: var(--success-color); font-weight: 500; opacity: 0; transition: opacity 0.5s ease; font-size: 0.85rem; }
@@ -261,6 +262,7 @@ html, body {
     font-family: var(--font-sans);
     transition: border-color 0.2s, box-shadow 0.2s;
     background-color: var(--surface-color);
+    color: var(--text-color);
 }
 .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
     outline: none;
@@ -316,6 +318,7 @@ fieldset legend { padding: 0 0.5rem; font-weight: 600; }
 .conditional-section .bold { font-weight: 600; display: block; margin-bottom: 1rem; }
 .sub-card { background-color: #f8f9fa; margin-top: 1rem; border-left-color: var(--secondary-color); }
 .sub-card .card-title { font-size: 1rem; }
+.conditional-input { margin-top: 0.5rem; }
 
 /* --- NOVO DESIGN PROFISSIONAL PARA O PREVIEW --- */
 .preview-panel { 
@@ -381,6 +384,28 @@ fieldset legend { padding: 0 0.5rem; font-weight: 600; }
     height: 20px;
     color: var(--primary-color);
 }
+
+.pendencies-section h3 {
+    color: var(--danger-color);
+    border-bottom-color: var(--danger-color);
+}
+.pendencies-section h3 i {
+    color: var(--danger-color);
+}
+.pendencies-list {
+    list-style-type: none;
+    padding-left: 0;
+}
+.pendencies-list li {
+    background-color: rgba(192, 57, 43, 0.05);
+    padding: 0.5rem 1rem;
+    border-left: 3px solid var(--danger-color);
+    margin-bottom: 0.5rem !important;
+    border-radius: 4px;
+    font-family: var(--font-sans);
+    font-size: 10pt;
+}
+
 
 .preview-section h4 { 
     font-family: var(--font-sans); 
@@ -451,6 +476,14 @@ fieldset legend { padding: 0 0.5rem; font-weight: 600; }
 }
 .obs-content strong {
     min-width: 0 !important;
+}
+.no-items-message {
+    font-style: italic;
+    color: var(--text-light-color);
+    padding: 1rem;
+    text-align: center;
+    background-color: var(--bg-color);
+    border-radius: var(--border-radius);
 }
 
 .preview-footer { 
