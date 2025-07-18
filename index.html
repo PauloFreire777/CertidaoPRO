@@ -51,7 +51,7 @@
                             <h2>1. Dados do Processo</h2>
                             <div class="form-group">
                                 <label>Número do Processo <span class="required">*</span></label>
-                                <input type="text" v-model="state.processo.numero" placeholder="Ex: 5001234-56.2023.8.13.0024">
+                                <input type="text" v-model="state.processo.numero" placeholder="xxxxxxx-xx.xxxx.x.xx.xxxx">
                             </div>
                             <div class="form-group checkbox-group">
                                 <input type="checkbox" id="cumulativo" v-model="state.processo.cumulativo">
@@ -111,6 +111,10 @@
                                         </select>
                                     </div>
                                 </div>
+                                <div class="form-group checkbox-group">
+                                    <input type="checkbox" :id="'testamento_' + falecido.id" v-model="falecido.deixouTestamento">
+                                    <label :for="'testamento_' + falecido.id">Deixou testamento?</label>
+                                </div>
                             </div>
                             <button @click="addFalecido" class="btn-add"><i data-lucide="plus"></i> Adicionar Falecido</button>
                         </div>
@@ -157,6 +161,68 @@
                                 @remove="removeHerdeiro(hIndex)">
                             </heir-form-group>
                             <button @click="addHerdeiro" class="btn-add"><i data-lucide="plus"></i> Adicionar Herdeiro</button>
+                            <hr>
+                            <!-- Renúncia de Direitos -->
+                            <fieldset>
+                                <legend>Renúncia de Direitos Hereditários</legend>
+                                <div class="form-group checkbox-group">
+                                    <input type="checkbox" id="houveRenuncia" v-model="state.renuncia.houveRenuncia">
+                                    <label for="houveRenuncia">Houve Renúncia de Direitos?</label>
+                                </div>
+                                <div v-if="state.renuncia.houveRenuncia" class="conditional-section">
+                                    <h4>Herdeiros Renunciantes</h4>
+                                    <div v-for="heir in state.herdeiros" :key="heir.id" class="checkbox-group-vertical">
+                                        <div class="checkbox-line">
+                                            <input type="checkbox" :id="'renuncia_' + heir.id" :checked="isRenunciante(heir.id)" @change="toggleRenunciante(heir.id)">
+                                            <label :for="'renuncia_' + heir.id">{{ heir.nome || 'Herdeiro sem nome' }}</label>
+                                        </div>
+                                        <div v-if="isRenunciante(heir.id)" class="conditional-input">
+                                             <div class="form-group">
+                                                 <label>Tipo de Renúncia</label>
+                                                 <select v-model="getRenuncia(heir.id).tipo">
+                                                    <option>Abdicativa</option>
+                                                    <option>Translativa</option>
+                                                 </select>
+                                             </div>
+                                             <div class="form-group">
+                                                <label>ID da Escritura/Termo de Renúncia</label>
+                                                <input type="text" v-model="getRenuncia(heir.id).idEscritura" placeholder="ID do documento">
+                                             </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </fieldset>
+                            <!-- Cessão de Direitos -->
+                            <fieldset>
+                                <legend>Cessão de Direitos Hereditários</legend>
+                                <div class="form-group checkbox-group">
+                                    <input type="checkbox" id="houveCessao" v-model="state.cessao.houveCessao">
+                                    <label for="houveCessao">Houve Cessão de Direitos?</label>
+                                </div>
+                                <div v-if="state.cessao.houveCessao" class="conditional-section">
+                                    <div class="form-group">
+                                        <label>ID da Escritura de Cessão</label>
+                                        <input type="text" v-model="state.cessao.idEscritura" placeholder="ID do documento">
+                                    </div>
+                                    <h4>Cessionários</h4>
+                                    <div v-for="(cessionario, cIndex) in state.cessao.cessionarios" :key="cIndex" class="dynamic-card sub-card">
+                                        <button @click="removeCessionario(cIndex)" class="btn-remove" title="Remover Cessionário">×</button>
+                                        <div class="form-group">
+                                            <label>Nome do Cessionário</label>
+                                            <input type="text" v-model="cessionario.nome">
+                                        </div>
+                                        <div class="form-group">
+                                            <label>Documentos do Cessionário</label>
+                                            <input type="text" v-model="cessionario.documentos">
+                                        </div>
+                                        <div class="form-group">
+                                            <label>Procuração do Cessionário (ID)</label>
+                                            <input type="text" v-model="cessionario.idProcuracao">
+                                        </div>
+                                    </div>
+                                    <button @click="addCessionario" class="btn-add-small"><i data-lucide="plus"></i> Adicionar Cessionário</button>
+                                </div>
+                            </fieldset>
                         </div>
                         
                         <!-- Aba 5: Bens e Valores -->
@@ -174,6 +240,10 @@
                                             <option v-for="opt in field.options" :key="opt">{{ opt }}</option>
                                         </select>
                                     </div>
+                                    <div v-if="hasIncapaz && ['imoveis', 'veiculos', 'semoventes', 'outrosBens'].includes(section.key)" class="form-group checkbox-group">
+                                        <input type="checkbox" :id="`avaliado_${section.key}_${index}`" v-model="item.avaliado">
+                                        <label :for="`avaliado_${section.key}_${index}`">Avaliado Judicialmente</label>
+                                    </div>
                                 </div>
                                 <button @click="addBem(section.key)" class="btn-add-small"><i data-lucide="plus"></i> Adicionar {{ section.singular }}</button>
                             </fieldset>
@@ -190,22 +260,81 @@
                         <div v-show="activeTab === 5" class="tab-pane">
                             <h2>6. Documentos Processuais</h2>
                              <div class="dynamic-card">
-                                <div v-for="doc in documentosProcessuais" :key="doc.model" class="form-group checkbox-group-vertical">
-                                    <div class="checkbox-line">
-                                        <input type="checkbox" :id="doc.model" v-model="state.documentosProcessuais[doc.model].presente">
-                                        <label :for="doc.model">{{ doc.label }}</label>
-                                    </div>
-                                    <input v-if="state.documentosProcessuais[doc.model].presente" type="text" v-model="state.documentosProcessuais[doc.model].id" placeholder="ID do documento">
+                                <!-- Primeiras Declarações -->
+                                <div class="form-group">
+                                    <label>Primeiras Declarações</label>
+                                    <select v-model="state.documentosProcessuais.primeirasDeclaracoes.status">
+                                        <option>Apresentada</option>
+                                        <option>Não Apresentada</option>
+                                    </select>
+                                    <input v-if="state.documentosProcessuais.primeirasDeclaracoes.status === 'Apresentada'" type="text" v-model="state.documentosProcessuais.primeirasDeclaracoes.id" placeholder="ID do documento" class="conditional-input">
                                 </div>
                                 <hr>
-                                <h4>Documentos Obrigatórios</h4>
+                                <!-- Edital -->
                                 <div class="form-group">
-                                    <label>ID da Sentença Homologatória <span class="required">*</span></label>
-                                    <input type="text" v-model="state.documentosProcessuais.idSentenca" placeholder="ID do documento">
+                                    <label>Edital</label>
+                                    <select v-model="state.documentosProcessuais.edital.determinado">
+                                        <option>Determinado</option>
+                                        <option>Não Determinado</option>
+                                    </select>
                                 </div>
+                                <div v-if="state.documentosProcessuais.edital.determinado === 'Determinado'" class="conditional-section">
+                                    <div class="form-group">
+                                        <label>Status do Edital</label>
+                                        <select v-model="state.documentosProcessuais.edital.status">
+                                            <option>Expedido</option>
+                                            <option>Não Expedido</option>
+                                        </select>
+                                        <input v-if="state.documentosProcessuais.edital.status === 'Expedido'" type="text" v-model="state.documentosProcessuais.edital.id" placeholder="ID do Edital" class="conditional-input">
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Decurso de Prazo</label>
+                                        <select v-model="state.documentosProcessuais.edital.prazoDecorrido">
+                                            <option>Sim</option>
+                                            <option>Não</option>
+                                        </select>
+                                        <input v-if="state.documentosProcessuais.edital.prazoDecorrido === 'Sim'" type="text" v-model="state.documentosProcessuais.edital.idDecursoPrazo" placeholder="ID da Certidão de Decurso" class="conditional-input">
+                                    </div>
+                                </div>
+                                <hr>
+                                <!-- Últimas Declarações -->
                                 <div class="form-group">
-                                    <label>ID do Trânsito em Julgado <span class="required">*</span></label>
-                                    <input type="text" v-model="state.documentosProcessuais.idTransitoJulgado" placeholder="ID do documento">
+                                    <label>Últimas Declarações</label>
+                                    <select v-model="state.documentosProcessuais.ultimasDeclaracoes.status">
+                                        <option>Apresentada</option>
+                                        <option>Não Apresentada</option>
+                                    </select>
+                                    <input v-if="state.documentosProcessuais.ultimasDeclaracoes.status === 'Apresentada'" type="text" v-model="state.documentosProcessuais.ultimasDeclaracoes.id" placeholder="ID do documento" class="conditional-input">
+                                </div>
+                                <hr>
+                                <!-- Testamento / CENSEC -->
+                                <div v-if="houveTestamento" class="form-group">
+                                    <label>Testamento</label>
+                                    <input type="text" v-model="state.documentosProcessuais.testamento.id" placeholder="ID do Testamento">
+                                </div>
+                                <div v-else class="form-group">
+                                    <label>Certidão CENSEC</label>
+                                    <input type="text" v-model="state.documentosProcessuais.censec.id" placeholder="ID da Certidão CENSEC">
+                                </div>
+                                <hr>
+                                <!-- Sentença -->
+                                <div class="form-group">
+                                    <label>Sentença Homologatória</label>
+                                    <select v-model="state.documentosProcessuais.sentenca.status">
+                                        <option>Proferida</option>
+                                        <option>Não Proferida</option>
+                                    </select>
+                                    <input v-if="state.documentosProcessuais.sentenca.status === 'Proferida'" type="text" v-model="state.documentosProcessuais.sentenca.id" placeholder="ID da Sentença" class="conditional-input">
+                                </div>
+                                <hr>
+                                <!-- Trânsito em Julgado -->
+                                <div class="form-group">
+                                    <label>Trânsito em Julgado</label>
+                                    <select v-model="state.documentosProcessuais.transito.status">
+                                        <option>Ocorrido</option>
+                                        <option>Não Ocorrido</option>
+                                    </select>
+                                    <input v-if="state.documentosProcessuais.transito.status === 'Ocorrido'" type="text" v-model="state.documentosProcessuais.transito.id" placeholder="ID da Certidão" class="conditional-input">
                                 </div>
                             </div>
                         </div>
@@ -232,19 +361,61 @@
                                     <div class="grid-3">
                                         <div class="form-group">
                                             <label>CND Municipal</label>
-                                            <input type="text" v-model="falecido.idCndMunicipal" placeholder="ID/Link">
+                                            <select v-model="falecido.cndMunicipal.status">
+                                                <option>Juntada</option>
+                                                <option>Não Juntada</option>
+                                            </select>
+                                            <input v-if="falecido.cndMunicipal.status === 'Juntada'" type="text" v-model="falecido.cndMunicipal.id" placeholder="ID/Link" class="conditional-input">
                                         </div>
                                         <div class="form-group">
                                             <label>CND Estadual</label>
-                                            <input type="text" v-model="falecido.idCndEstadual" placeholder="ID/Link">
+                                            <select v-model="falecido.cndEstadual.status">
+                                                <option>Juntada</option>
+                                                <option>Não Juntada</option>
+                                            </select>
+                                            <input v-if="falecido.cndEstadual.status === 'Juntada'" type="text" v-model="falecido.cndEstadual.id" placeholder="ID/Link" class="conditional-input">
                                         </div>
                                         <div class="form-group">
                                             <label>CND Federal</label>
-                                            <input type="text" v-model="falecido.idCndFederal" placeholder="ID/Link">
+                                            <select v-model="falecido.cndFederal.status">
+                                                <option>Juntada</option>
+                                                <option>Não Juntada</option>
+                                            </select>
+                                            <input v-if="falecido.cndFederal.status === 'Juntada'" type="text" v-model="falecido.cndFederal.id" placeholder="ID/Link" class="conditional-input">
                                         </div>
                                     </div>
                                 </fieldset>
                             </div>
+                             <!-- Custas Processuais -->
+                            <fieldset>
+                                <legend>Custas Processuais</legend>
+                                <div class="form-group">
+                                    <label>Situação das Custas</label>
+                                    <select v-model="state.custas.situacao">
+                                        <option>Ao final</option>
+                                        <option>Isenção</option>
+                                        <option>Devidas</option>
+                                    </select>
+                                </div>
+                                <div v-if="state.custas.situacao === 'Devidas'" class="conditional-section">
+                                    <div class="form-group">
+                                        <label>Cálculo</label>
+                                        <select v-model="state.custas.calculada">
+                                            <option>Calculada</option>
+                                            <option>Não Calculada</option>
+                                        </select>
+                                        <input v-if="state.custas.calculada === 'Calculada'" type="text" v-model="state.custas.idCalculo" placeholder="ID do Cálculo" class="conditional-input">
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Pagamento</label>
+                                        <select v-model="state.custas.paga">
+                                            <option>Pago</option>
+                                            <option>Não Pago</option>
+                                        </select>
+                                        <input v-if="state.custas.paga === 'Pago'" type="text" v-model="state.custas.idPagamento" placeholder="ID do Comprovante" class="conditional-input">
+                                    </div>
+                                </div>
+                            </fieldset>
                         </div>
 
                         <!-- Aba 8: Observações -->
@@ -295,6 +466,16 @@
                         <h1>CERTIDÃO DE REGULARIDADE</h1>
                     </div>
                     <div class="preview-content">
+                        <!-- Seção de Pendências -->
+                        <div class="preview-section pendencies-section" v-if="pendencies.length > 0">
+                            <h3><i data-lucide="alert-triangle"></i> PENDÊNCIAS</h3>
+                            <div class="preview-card">
+                                <ul class="pendencies-list">
+                                    <li v-for="pendency in pendencies">{{ pendency }}</li>
+                                </ul>
+                            </div>
+                        </div>
+
                         <!-- Seção 1: Dados do Processo -->
                         <div class="preview-section" v-if="state.processo.numero">
                             <h3><i data-lucide="folder-kanban"></i> 1. Dados do Processo</h3>
@@ -332,6 +513,31 @@
                             <h3><i data-lucide="users"></i> 4. Herdeiros e Sucessores</h3>
                             <heir-preview-group :heirs="state.herdeiros" :level="0"></heir-preview-group>
                         </div>
+                        
+                        <!-- Seção de Renúncia de Direitos -->
+                        <div class="preview-section" v-if="state.renuncia.houveRenuncia">
+                            <h3><i data-lucide="file-x-2"></i> Renúncia de Direitos</h3>
+                            <div v-for="r in state.renuncia.renunciantes" :key="r.herdeiroId" class="preview-card">
+                                <p><strong>Renunciante:</strong><span>{{ getHeirNameById(r.herdeiroId) }}</span></p>
+                                <p><strong>Tipo de Renúncia:</strong><span>{{ r.tipo }}</span></p>
+                                <p><strong>ID da Escritura/Termo:</strong><span>{{ r.idEscritura || 'Não informado' }}</span></p>
+                            </div>
+                        </div>
+
+                        <!-- Seção de Cessão de Direitos -->
+                        <div class="preview-section" v-if="state.cessao.houveCessao">
+                            <h3><i data-lucide="arrow-right-left"></i> Cessão de Direitos</h3>
+                            <div class="preview-card">
+                                <p><strong>Escritura de Cessão (ID):</strong><span>{{ state.cessao.idEscritura || 'Não informado' }}</span></p>
+                                <div v-for="c in state.cessao.cessionarios" class="preview-sub-card">
+                                    <p><strong>Cessionário:</strong><span>{{ c.nome }}</span></p>
+                                    <p><strong>Documentos:</strong><span>{{ c.documentos }}</span></p>
+                                    <div v-if="c.idProcuracao" class="info-procuracao">
+                                        <p><strong>Procuração (ID):</strong><span>{{ c.idProcuracao }}</span></p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
 
                         <!-- Seção 5: Bens -->
                         <div class="preview-section" v-if="hasBens">
@@ -345,31 +551,39 @@
                                        </p>
                                     </div>
                                 </div>
+                                <div v-else class="no-items-message">
+                                    <p>Nenhum item da categoria "{{section.title}}" foi declarado.</p>
+                                </div>
                             </div>
                         </div>
 
                         <!-- Seção 6: Documentos Processuais -->
-                        <div class="preview-section" v-if="state.documentosProcessuais.idSentenca || checkedProcessualDocs.length">
+                        <div class="preview-section">
                             <h3><i data-lucide="file-text"></i> 6. Documentos Processuais</h3>
                             <div class="preview-card">
-                                <p><strong>Sentença Homologatória (ID):</strong><span>{{ state.documentosProcessuais.idSentenca || 'Não informado' }}</span></p>
-                                <p><strong>Trânsito em Julgado (ID):</strong><span>{{ state.documentosProcessuais.idTransitoJulgado || 'Não informado' }}</span></p>
-                                <ul class="doc-list">
-                                    <li v-for="doc in checkedProcessualDocs" :key="doc.label">
-                                        <span>{{ doc.label }} (ID: {{ doc.id }})</span>
-                                    </li>
-                                </ul>
+                                <p><strong>Primeiras Declarações:</strong> <span>{{ state.documentosProcessuais.primeirasDeclaracoes.status === 'Apresentada' ? `Apresentada (ID: ${state.documentosProcessuais.primeirasDeclaracoes.id || 'N/A'})` : 'Não Apresentada' }}</span></p>
+                                <p><strong>Edital:</strong> <span>{{ getEditalStatus() }}</span></p>
+                                <p><strong>Últimas Declarações:</strong> <span>{{ state.documentosProcessuais.ultimasDeclaracoes.status === 'Apresentada' ? `Apresentada (ID: ${state.documentosProcessuais.ultimasDeclaracoes.id || 'N/A'})` : 'Não Apresentada' }}</span></p>
+                                <p v-if="houveTestamento"><strong>Testamento:</strong> <span>{{ state.documentosProcessuais.testamento.id ? `Apresentado (ID: ${state.documentosProcessuais.testamento.id})` : 'Pendente' }}</span></p>
+                                <p v-else><strong>Certidão CENSEC:</strong> <span>{{ state.documentosProcessuais.censec.id ? `Apresentada (ID: ${state.documentosProcessuais.censec.id})` : 'Pendente' }}</span></p>
+                                <p><strong>Sentença:</strong> <span>{{ state.documentosProcessuais.sentenca.status === 'Proferida' ? `Proferida (ID: ${state.documentosProcessuais.sentenca.id || 'N/A'})` : 'Não Proferida' }}</span></p>
+                                <p><strong>Trânsito em Julgado:</strong> <span>{{ state.documentosProcessuais.transito.status === 'Ocorrido' ? `Ocorrido (ID: ${state.documentosProcessuais.transito.id || 'N/A'})` : 'Não Ocorrido' }}</span></p>
                             </div>
                         </div>
 
                         <!-- Seção 7: Documentação Tributária -->
-                        <div class="preview-section" v-if="state.documentacaoTributaria.length">
-                            <h3><i data-lucide="landmark"></i> 7. Regularidade Tributária</h3>
+                        <div class="preview-section" v-if="state.documentacaoTributaria.length || state.custas.situacao">
+                            <h3><i data-lucide="landmark"></i> 7. Regularidade Tributária e Custas</h3>
                             <div v-for="(trib, i) in state.documentacaoTributaria" :key="i" class="preview-card">
                                 <p><strong>Referente a:</strong><span>{{ trib.nomeFalecido }}</span></p>
                                 <p><strong>Status ITCD:</strong><span>{{ trib.statusItcd }}</span></p>
-                                <p><strong>CNDs:</strong><span>{{ getCndsStatus(trib) }}</span></p>
+                                <p><strong>CND Municipal:</strong><span>{{ trib.cndMunicipal.status === 'Juntada' ? `Juntada (ID: ${trib.cndMunicipal.id || 'N/A'})` : 'Não Juntada' }}</span></p>
+                                <p><strong>CND Estadual:</strong><span>{{ trib.cndEstadual.status === 'Juntada' ? `Juntada (ID: ${trib.cndEstadual.id || 'N/A'})` : 'Não Juntada' }}</span></p>
+                                <p><strong>CND Federal:</strong><span>{{ trib.cndFederal.status === 'Juntada' ? `Juntada (ID: ${trib.cndFederal.id || 'N/A'})` : 'Não Juntada' }}</span></p>
                             </div>
+                             <div class="preview-card">
+                                 <p><strong>Custas Processuais:</strong><span>{{ getCustasStatus() }}</span></p>
+                             </div>
                         </div>
 
                         <!-- Seção 8: Observações -->
