@@ -11,13 +11,20 @@ const createHeirObject = () => ({
     documentos: '',
     estado: 'Capaz',
     estadoCivil: 'Solteiro(a)',
+    isMeeiro: false,
     idProcuracao: '',
     curador: { nome: '', idTermo: '' },
     idCertidaoObito: '',
-    conjuge: { nome: '', idProcuracao: '' },
+    conjuge: { nome: '', idProcuracao: '', regimeDeBens: 'Comunhão Parcial de Bens' },
     representantes: []
 });
 
+const createCessionarioObject = () => ({
+    id: crypto.randomUUID(),
+    nome: '',
+    documentos: '',
+    idProcuracao: ''
+});
 
 // Função para criar um estado inicial limpo
 const createInitialState = () => ({
@@ -35,9 +42,19 @@ const createInitialState = () => ({
         idTermoCompromisso: ''
     },
     herdeiros: [],
+    renuncia: {
+        houveRenuncia: false,
+        renunciantes: [] // Array of { herdeiroId: '...', tipo: 'Abdicativa', idEscritura: '' }
+    },
+    cessao: {
+        houveCessao: false,
+        idEscritura: '',
+        cessionarios: []
+    },
     bens: {
         imoveis: [],
         veiculos: [],
+        semoventes: [],
         outrosBens: [],
         valoresResiduais: [],
         dividas: [],
@@ -45,12 +62,20 @@ const createInitialState = () => ({
         idLaudoAvaliacaoIncapaz: ''
     },
     documentosProcessuais: {
-        primeirasDeclaracoes: { presente: false, id: '' },
-        edital: { presente: false, id: '' },
-        citacoes: { presente: false, id: '' },
-        ultimasDeclaracoes: { presente: false, id: '' },
-        idSentenca: '',
-        idTransitoJulgado: ''
+        primeirasDeclaracoes: { status: 'Não Apresentada', id: '' },
+        edital: { determinado: 'Não', status: 'Não Expedido', id: '', prazoDecorrido: 'Não', idDecursoPrazo: '' },
+        ultimasDeclaracoes: { status: 'Não Apresentada', id: '' },
+        testamento: { id: '' },
+        censec: { id: '' },
+        sentenca: { status: 'Não Proferida', id: '' },
+        transito: { status: 'Não Ocorrido', id: '' }
+    },
+    custas: {
+        situacao: 'Ao final', // 'Ao final', 'Isenção', 'Devidas'
+        calculada: 'Não', // 'Sim', 'Não'
+        idCalculo: '',
+        paga: 'Não', // 'Sim', 'Não'
+        idPagamento: ''
     },
     documentacaoTributaria: [],
     observacoes: []
@@ -63,7 +88,8 @@ const createFalecido = () => ({
     dataFalecimento: '',
     documentos: '',
     idCertidaoObito: '',
-    regimeCasamento: 'Não se aplica'
+    regimeCasamento: 'Não se aplica',
+    deixouTestamento: false
 });
 
 // Função para criar uma nova observação
@@ -106,6 +132,11 @@ const HeirFormComponent = {
         <h4 class="card-title">{{ isRepresentative ? 'Representante' : 'Herdeiro(a)' }} {{ index + 1 }}</h4>
         <button @click="removeThis" class="btn-remove" :title="isRepresentative ? 'Remover Representante' : 'Remover Herdeiro'">×</button>
         
+        <div class="form-group checkbox-group" v-if="!isRepresentative">
+            <input type="checkbox" :id="'meeiro_' + heir.id" v-model="heir.isMeeiro">
+            <label :for="'meeiro_' + heir.id">Este herdeiro é Meeiro(a)</label>
+        </div>
+
         <div class="form-group">
             <label>Nome Completo <span class="required">*</span></label>
             <input type="text" v-model="heir.nome">
@@ -190,6 +221,15 @@ const HeirFormComponent = {
                     <input type="text" v-model="heir.conjuge.idProcuracao">
                 </div>
             </div>
+            <div class="form-group">
+                <label>Regime de Bens</label>
+                <select v-model="heir.conjuge.regimeDeBens">
+                    <option>Comunhão Parcial de Bens</option>
+                    <option>Comunhão Universal de Bens</option>
+                    <option>Separação Total de Bens</option>
+                    <option>Participação Final nos Aquestos</option>
+                </select>
+            </div>
         </div>
       </div>
     `
@@ -217,10 +257,11 @@ const HeirPreviewComponent = {
     template: `
       <div v-for="(h, i) in heirs" :key="h.id" class="preview-card" :style="{ marginLeft: level * 20 + 'px' }">
         <p>
-            <strong>{{ level > 0 ? 'Representante:' : 'Herdeiro(a):' }}</strong> 
+            <strong>{{ h.isMeeiro ? 'Meeiro(a):' : (level > 0 ? 'Representante:' : 'Herdeiro(a):') }}</strong> 
             <span>{{ h.nome || 'Não informado' }} <span v-if="h.parentesco">({{ h.parentesco }})</span></span>
         </p>
         <p><strong>Condição:</strong> <span>{{ h.estado }}</span></p>
+        <p><strong>Documentos Pessoais:</strong> <span>{{ h.documentos || 'Não informado' }}</span></p>
         
         <div v-if="h.idProcuracao" class="info-procuracao">
             <p><strong>Procuração (ID):</strong> <span>{{ h.idProcuracao }}</span></p>
@@ -228,16 +269,19 @@ const HeirPreviewComponent = {
         
         <div v-if="h.estado === 'Incapaz'" class="preview-sub-card warning">
             <p><strong>Curador(a):</strong> <span>{{ h.curador.nome || 'Não informado' }}</span></p>
+            <p><strong>Termo de Curador (ID):</strong> <span>{{ h.curador.idTermo || 'Não informado' }}</span></p>
         </div>
 
         <div v-if="h.estadoCivil === 'Casado(a)' || h.estadoCivil === 'União Estável'" class="preview-sub-card spouse">
             <p><strong>Cônjuge/Comp.:</strong> <span>{{ h.conjuge.nome || 'Não informado' }}</span></p>
+            <p><strong>Regime de Bens:</strong> <span>{{ h.conjuge.regimeDeBens }}</span></p>
             <div v-if="h.conjuge.idProcuracao" class="info-procuracao" style="margin-left: 1rem;">
                 <p><strong>Procuração Cônjuge (ID):</strong> <span>{{ h.conjuge.idProcuracao }}</span></p>
             </div>
         </div>
 
         <div v-if="h.estado === 'Falecido'" class="preview-sub-card danger">
+            <p><strong>Certidão de Óbito (ID):</strong> <span>{{ h.idCertidaoObito || 'Não informado' }}</span></p>
             <p><strong>Sucessão de Herdeiro Falecido:</strong></p>
             <heir-preview-group :heirs="h.representantes" :level="level + 1"></heir-preview-group>
         </div>
@@ -259,6 +303,7 @@ const app = Vue.createApp({
             ],
             isLoading: false,
             showAutosaveIndicator: false,
+            theme: 'light',
             bensSections: [
                 { key: 'imoveis', title: 'Bens Imóveis', singular: 'Imóvel', fields: [
                     { label: 'Descrição', model: 'descricao' }, { label: 'Matrícula', model: 'matricula' },
@@ -267,7 +312,10 @@ const app = Vue.createApp({
                 { key: 'veiculos', title: 'Veículos', singular: 'Veículo', fields: [
                     { label: 'Descrição (Marca/Modelo)', model: 'descricao' }, { label: 'Placa', model: 'placa' }, { label: 'Renavam', model: 'renavam' }
                 ]},
-                { key: 'outrosBens', title: 'Outros Bens Móveis', singular: 'Bem', fields: [
+                { key: 'semoventes', title: 'Semoventes', singular: 'Semovente', fields: [
+                    { label: 'Descrição', model: 'descricao' }, { label: 'Quantidade', model: 'quantidade' }, { label: 'Valor Estimado (R$)', model: 'valor' }
+                ]},
+                { key: 'outrosBens', title: 'Outros Bens', singular: 'Bem', fields: [
                     { label: 'Descrição', model: 'descricao' }, { label: 'Quantidade', model: 'quantidade' }, { label: 'Valor Estimado (R$)', model: 'valor' }
                 ]},
                 { key: 'valoresResiduais', title: 'Valores Residuais', singular: 'Valor', fields: [
@@ -280,10 +328,6 @@ const app = Vue.createApp({
                 { key: 'alvaras', title: 'Alvarás Expedidos', singular: 'Alvará', fields: [
                     { label: 'Finalidade', model: 'finalidade' }, { label: 'Status', model: 'status', options: ['Requerido', 'Deferido', 'Cumprido'] }
                 ]}
-            ],
-            documentosProcessuais: [
-                { label: 'Primeiras Declarações', model: 'primeirasDeclaracoes' }, { label: 'Edital de Convocação', model: 'edital' },
-                { label: 'Citações e Intimações', model: 'citacoes' }, { label: 'Últimas Declarações', model: 'ultimasDeclaracoes' },
             ]
         };
     },
@@ -294,22 +338,18 @@ const app = Vue.createApp({
     },
 
     computed: {
+        houveTestamento() {
+            return this.state.falecidos.some(f => f.deixouTestamento);
+        },
         hasIncapaz() {
             const checkIncapaz = (heirs) => {
-                return heirs.some(h => h.estado === 'Incapaz' || (h.representantes && checkIncapaz(h.representantes)));
+                if (!heirs) return false;
+                return heirs.some(h => h.estado === 'Incapaz' || checkIncapaz(h.representantes));
             };
             return checkIncapaz(this.state.herdeiros);
         },
         hasBens() {
             return Object.values(this.state.bens).some(arr => Array.isArray(arr) ? arr.length > 0 : false);
-        },
-        checkedProcessualDocs() {
-            return this.documentosProcessuais
-                .filter(doc => this.state.documentosProcessuais[doc.model].presente)
-                .map(doc => ({
-                    label: doc.label,
-                    id: this.state.documentosProcessuais[doc.model].id || 'Não informado'
-                }));
         },
         emissionDate() {
             return new Date().toLocaleDateString('pt-BR', {
@@ -317,6 +357,99 @@ const app = Vue.createApp({
                 month: '2-digit',
                 year: 'numeric'
             });
+        },
+        pendencies() {
+            const items = [];
+            const { inventariante, herdeiros, documentacaoTributaria, bens, documentosProcessuais, cessao, renuncia, custas } = this.state;
+
+            // Inventariante
+            if (!inventariante.documentos) items.push('Documentos pessoais do Inventariante pendentes.');
+            if (!inventariante.idProcuracao) items.push('Procuração do Inventariante pendente.');
+
+            // Herdeiros (recursivo)
+            const checkHerdeiro = (heir, path) => {
+                if (!heir.documentos) items.push(`Documentos pessoais de ${path} pendentes.`);
+                
+                if (heir.estado === 'Capaz' && !heir.idProcuracao) {
+                    items.push(`Procuração de ${path} pendente.`);
+                }
+                if (heir.estado === 'Incapaz' && !heir.curador.idTermo) {
+                    items.push(`Termo de Compromisso do Curador de ${path} pendente.`);
+                }
+                if (heir.estado === 'Falecido' && !heir.idCertidaoObito) {
+                    items.push(`Certidão de Óbito de ${path} pendente.`);
+                }
+                if ((heir.estadoCivil === 'Casado(a)' || heir.estadoCivil === 'União Estável') && !heir.conjuge.idProcuracao) {
+                    items.push(`Procuração do cônjuge de ${path} pendente.`);
+                }
+
+                if (heir.representantes && heir.representantes.length > 0) {
+                    heir.representantes.forEach((rep, i) => checkHerdeiro(rep, `${path} -> Representante ${i+1} (${rep.nome || 'sem nome'})`));
+                }
+            };
+            herdeiros.forEach((h, i) => checkHerdeiro(h, `Herdeiro ${i+1} (${h.nome || 'sem nome'})`));
+            
+            // Cessão de Direitos
+            if (cessao.houveCessao) {
+                if (!cessao.idEscritura) items.push('ID da Escritura de Cessão de Direitos pendente.');
+                cessao.cessionarios.forEach((c, i) => {
+                    if (!c.nome) items.push(`Nome do Cessionário ${i+1} pendente.`);
+                    if (!c.documentos) items.push(`Documentos do Cessionário ${c.nome || i+1} pendentes.`);
+                    if (!c.idProcuracao) items.push(`Procuração do Cessionário ${c.nome || i+1} pendente.`);
+                });
+            }
+
+            // Renúncia de Direitos
+            if (renuncia.houveRenuncia) {
+                if (renuncia.renunciantes.length === 0) {
+                    items.push('Nenhum herdeiro selecionado como renunciante.');
+                } else {
+                    renuncia.renunciantes.forEach(r => {
+                        const heirName = this.getHeirNameById(r.herdeiroId);
+                        if (!r.idEscritura) {
+                            items.push(`ID da Escritura/Termo de Renúncia para ${heirName} pendente.`);
+                        }
+                    });
+                }
+            }
+
+            // Documentação Tributária
+            documentacaoTributaria.forEach(trib => {
+                if (trib.cndMunicipal.status === 'Não Juntada') items.push(`CND Municipal de ${trib.nomeFalecido} não juntada.`);
+                if (trib.cndEstadual.status === 'Não Juntada') items.push(`CND Estadual de ${trib.nomeFalecido} não juntada.`);
+                if (trib.cndFederal.status === 'Não Juntada') items.push(`CND Federal de ${trib.nomeFalecido} não juntada.`);
+            });
+            
+            // Custas Processuais
+            if (custas.situacao === 'Devidas') {
+                if (custas.calculada === 'Não Calculada') items.push('Cálculo das custas processuais pendente.');
+                if (custas.paga === 'Não Pago') items.push('Pagamento das custas processuais pendente.');
+            }
+
+            // Avaliação de Bens para Incapazes
+            if (this.hasIncapaz) {
+                ['imoveis', 'veiculos', 'semoventes', 'outrosBens'].forEach(key => {
+                    bens[key].forEach((bem, i) => {
+                        if (!bem.avaliado) {
+                            items.push(`Avaliação judicial pendente para o item: ${bem.descricao || `${key.slice(0, -1)} ${i+1}`}.`);
+                        }
+                    });
+                });
+            }
+
+            // Documentos Processuais
+            if (documentosProcessuais.edital.determinado === 'Determinado' && documentosProcessuais.edital.status === 'Não Expedido') {
+                items.push('Expedição do Edital pendente.');
+            }
+            if (this.houveTestamento && !documentosProcessuais.testamento.id) {
+                items.push('ID do Testamento pendente.');
+            }
+            if (!this.houveTestamento && !documentosProcessuais.censec.id) {
+                items.push('ID da Certidão CENSEC pendente.');
+            }
+
+
+            return items;
         }
     },
 
@@ -333,7 +466,9 @@ const app = Vue.createApp({
                         falecidoId: f.id,
                         nomeFalecido: f.nome,
                         statusItcd: 'Não Declarado',
-                        idCndMunicipal: '', idCndEstadual: '', idCndFederal: ''
+                        cndMunicipal: { status: 'Não Juntada', id: '' },
+                        cndEstadual: { status: 'Não Juntada', id: '' },
+                        cndFederal: { status: 'Não Juntada', id: '' }
                     };
                 });
                 this.state.documentacaoTributaria = newTributos;
@@ -353,8 +488,11 @@ const app = Vue.createApp({
         addHerdeiro() { this.state.herdeiros.push(createHeirObject()); },
         removeHerdeiro(index) { this.state.herdeiros.splice(index, 1); },
 
+        addCessionario() { this.state.cessao.cessionarios.push(createCessionarioObject()); },
+        removeCessionario(index) { this.state.cessao.cessionarios.splice(index, 1); },
+
         addBem(sectionKey) {
-            const newBem = {};
+            const newBem = { avaliado: false }; // Inicia como não avaliado por padrão
             const section = this.bensSections.find(s => s.key === sectionKey);
             if (section) {
                 section.fields.forEach(field => { newBem[field.model] = ''; });
@@ -366,6 +504,25 @@ const app = Vue.createApp({
         addObservacao() { this.state.observacoes.push(createObservacao()); },
         removeObservacao(index) { this.state.observacoes.splice(index, 1); },
 
+        isRenunciante(heirId) {
+            return this.state.renuncia.renunciantes.some(r => r.herdeiroId === heirId);
+        },
+        getRenuncia(heirId) {
+            return this.state.renuncia.renunciantes.find(r => r.herdeiroId === heirId);
+        },
+        toggleRenunciante(heirId) {
+            const index = this.state.renuncia.renunciantes.findIndex(r => r.herdeiroId === heirId);
+            if (index > -1) {
+                this.state.renuncia.renunciantes.splice(index, 1);
+            } else {
+                this.state.renuncia.renunciantes.push({ herdeiroId: heirId, tipo: 'Abdicativa', idEscritura: '' });
+            }
+        },
+        getHeirNameById(id) {
+            const heir = this.state.herdeiros.find(h => h.id === id);
+            return heir ? heir.nome : 'Herdeiro não encontrado';
+        },
+
         saveStateToLocalStorage(state) {
             try { localStorage.setItem('certidaoInventarioState', JSON.stringify(state)); } 
             catch (e) { console.error("Erro ao salvar no localStorage:", e); }
@@ -376,13 +533,31 @@ const app = Vue.createApp({
             if (savedState) {
                 try {
                     const parsedState = JSON.parse(savedState);
-                    this.state = Object.assign(createInitialState(), parsedState);
+                    this.state = this.hydrateState(parsedState);
                     console.log("Estado carregado do localStorage.");
                 } catch (e) {
                     console.error("Erro ao carregar estado do localStorage:", e);
                     this.state = createInitialState();
                 }
             }
+        },
+
+        hydrateState(loadedState) {
+            const freshState = createInitialState();
+            // Use a simple deep merge that prefers the structure of freshState
+            const merge = (target, source) => {
+                for (const key in target) {
+                    if (source && typeof source[key] !== 'undefined') {
+                        if (typeof target[key] === 'object' && target[key] !== null && !Array.isArray(target[key])) {
+                            target[key] = merge(target[key], source[key]);
+                        } else {
+                            target[key] = source[key];
+                        }
+                    }
+                }
+                return target;
+            };
+            return merge(freshState, loadedState);
         },
 
         resetForm() {
@@ -413,7 +588,7 @@ const app = Vue.createApp({
                 try {
                     const importedState = JSON.parse(e.target.result);
                     if (importedState.processo && importedState.herdeiros) {
-                        this.state = Object.assign(createInitialState(), importedState);
+                        this.state = this.hydrateState(importedState);
                         alert('Certidão carregada com sucesso!');
                         this.activeTab = 0;
                     } else {
@@ -472,7 +647,7 @@ const app = Vue.createApp({
 
                 // Select all top-level blocks to be rendered
                 const header = document.querySelector('#preview-panel .preview-header');
-                const sections = document.querySelectorAll('#preview-panel .preview-section');
+                const sections = document.querySelectorAll('#preview-panel .preview-content > .preview-section');
                 const footer = document.querySelector('#preview-panel .preview-footer');
 
                 // Render header
@@ -517,10 +692,40 @@ const app = Vue.createApp({
 
         getCndsStatus(tributo) {
             const cnds = [];
-            if (tributo.idCndMunicipal) cnds.push('Municipal');
-            if (tributo.idCndEstadual) cnds.push('Estadual');
-            if (tributo.idCndFederal) cnds.push('Federal');
+            if (tributo.cndMunicipal.status === 'Juntada') cnds.push('Municipal');
+            if (tributo.cndEstadual.status === 'Juntada') cnds.push('Estadual');
+            if (tributo.cndFederal.status === 'Juntada') cnds.push('Federal');
             return cnds.length > 0 ? cnds.join(', ') : 'Nenhuma CND informada';
+        },
+        
+        getEditalStatus() {
+            const edital = this.state.documentosProcessuais.edital;
+            if (edital.determinado === 'Não Determinado') {
+                return 'Não determinada a expedição.';
+            }
+            if (edital.status === 'Não Expedido') {
+                return 'Expedição pendente.';
+            }
+            if (edital.prazoDecorrido === 'Não') {
+                return `Expedido (ID: ${edital.id || 'N/A'}), aguardando decurso de prazo.`;
+            }
+            return `Expedido (ID: ${edital.id || 'N/A'}), prazo decorrido (ID: ${edital.idDecursoPrazo || 'N/A'}).`;
+        },
+        getCustasStatus() {
+            const custas = this.state.custas;
+            if (custas.situacao === 'Isenção') return 'Isento de custas.';
+            if (custas.situacao === 'Ao final') return 'Custas a serem pagas ao final do processo.';
+            if (custas.situacao === 'Devidas') {
+                const calculo = custas.calculada === 'Calculada' ? `Calculada (ID: ${custas.idCalculo || 'N/A'})` : 'Cálculo pendente';
+                const pagamento = custas.paga === 'Pago' ? `Pagas (ID: ${custas.idPagamento || 'N/A'})` : 'Pagamento pendente';
+                return `${calculo}, ${pagamento}.`;
+            }
+            return 'Situação não informada.';
+        },
+        toggleTheme() {
+            this.theme = this.theme === 'light' ? 'dark' : 'light';
+            document.documentElement.setAttribute('data-theme', this.theme);
+            localStorage.setItem('certidaoTheme', this.theme);
         }
     },
 
