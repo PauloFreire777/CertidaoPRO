@@ -1,0 +1,513 @@
+{
+  "processo": {
+    "numero": "5001482-73.2025.8.13.0453",
+    "cumulativo": true,
+    "responsavel": {
+      "nome": "Servidor(a) Judiciário(a) (Exemplo)",
+      "cargo": "Oficial(a) Judiciário(a)"
+    },
+    "advogados": [
+      {
+        "id": "adv-101",
+        "nome": "Dr. Roberto Carlos Mendes",
+        "oab": "MG 114.520"
+      },
+      {
+        "id": "adv-102",
+        "nome": "Dra. Fernanda Souza Lima",
+        "oab": "MG 158.903"
+      },
+      {
+        "id": "adv-103",
+        "nome": "Dr. Marcos Vinícius Andrade (Defensor Dativo)",
+        "oab": "MG 182.311"
+      }
+    ]
+  },
+  "falecidos": [
+    {
+      "id": "fal-001",
+      "nome": "Antônio Augusto Ferreira",
+      "dataFalecimento": "2023-05-14",
+      "documentos": "ID 88102030 (CPF e RG)",
+      "idCertidaoObito": "ID 88102035",
+      "regimeCasamento": "Comunhão Universal de Bens",
+      "deixouTestamento": true
+    },
+    {
+      "id": "fal-002",
+      "nome": "Helena Maria Ferreira",
+      "dataFalecimento": "2024-11-02",
+      "documentos": "ID 88102040 (CPF e RG)",
+      "idCertidaoObito": "ID 88102045",
+      "regimeCasamento": "Comunhão Universal de Bens",
+      "deixouTestamento": false
+    }
+  ],
+  "inventariante": {
+    "nome": "Carlos Eduardo Ferreira",
+    "parentesco": "Filho",
+    "documentos": "ID 88102100",
+    "idProcuracao": "ID 88102105",
+    "idTermoCompromisso": "ID 88504112",
+    "advogadoId": "adv-101"
+  },
+  "herdeiros": [
+    {
+      "id": "herd-001",
+      "nome": "Carlos Eduardo Ferreira",
+      "parentesco": "Filho",
+      "documentos": "ID 88102100",
+      "estado": "Capaz",
+      "estadoCivil": "Casado(a)",
+      "regimeCasamento": "Comunhão Parcial de Bens",
+      "idCertidaoCasamento": "ID 88102110",
+      "isMeeiro": false,
+      "idProcuracao": "ID 88102105",
+      "advogadoId": "adv-101",
+      "curador": {
+        "nome": "",
+        "idTermo": "",
+        "idProcuracao": "",
+        "advogadoId": ""
+      },
+      "idCertidaoObito": "",
+      "itcdStatus": "Não Declarado",
+      "idItcd": "",
+      "conjuge": {
+        "nome": "Patrícia Gomes Ferreira",
+        "documentos": "ID 88102115",
+        "idProcuracao": "ID 88102118",
+        "advogadoId": "adv-101"
+      },
+      "representantes": []
+    },
+    {
+      "id": "herd-002",
+      "nome": "Beatriz Ferreira Santos",
+      "parentesco": "Filha",
+      "documentos": "ID 88102200",
+      "estado": "Capaz",
+      "estadoCivil": "Divorciado(a)",
+      "regimeCasamento": "Não se aplica",
+      "idCertidaoCasamento": "",
+      "isMeeiro": false,
+      "idProcuracao": "ID 88102205",
+      "advogadoId": "adv-102",
+      "curador": {
+        "nome": "",
+        "idTermo": "",
+        "idProcuracao": "",
+        "advogadoId": ""
+      },
+      "idCertidaoObito": "",
+      "itcdStatus": "Não Declarado",
+      "idItcd": "",
+      "conjuge": {
+        "nome": "",
+        "documentos": "",
+        "idProcuracao": "",
+        "advogadoId": ""
+      },
+      "representantes": []
+    },
+    {
+      "id": "herd-003",
+      "nome": "Lucas Gabriel Ferreira",
+      "parentesco": "Filho",
+      "documentos": "ID 88102300",
+      "estado": "Incapaz",
+      "estadoCivil": "Solteiro(a)",
+      "regimeCasamento": "Não se aplica",
+      "idCertidaoCasamento": "",
+      "isMeeiro": false,
+      "idProcuracao": "",
+      "advogadoId": "",
+      "curador": {
+        "nome": "Carlos Eduardo Ferreira",
+        "idTermo": "ID 88901122 (Termo de Curatela Definitiva)",
+        "idProcuracao": "ID 88901130",
+        "advogadoId": "adv-103"
+      },
+      "idCertidaoObito": "",
+      "itcdStatus": "Não Declarado",
+      "idItcd": "",
+      "conjuge": {
+        "nome": "",
+        "documentos": "",
+        "idProcuracao": "",
+        "advogadoId": ""
+      },
+      "representantes": []
+    },
+    {
+      "id": "herd-004",
+      "nome": "Marcos Paulo Ferreira (Pré-morto)",
+      "parentesco": "Filho",
+      "documentos": "ID 88102400",
+      "estado": "Falecido",
+      "estadoCivil": "Viúvo(a)",
+      "regimeCasamento": "Não se aplica",
+      "idCertidaoCasamento": "",
+      "isMeeiro": false,
+      "idProcuracao": "",
+      "advogadoId": "",
+      "curador": {
+        "nome": "",
+        "idTermo": "",
+        "idProcuracao": "",
+        "advogadoId": ""
+      },
+      "idCertidaoObito": "ID 88102410",
+      "itcdStatus": "Declarado e Pago",
+      "idItcd": "ID 94008812 (DAE Quitado)",
+      "conjuge": {
+        "nome": "",
+        "documentos": "",
+        "idProcuracao": "",
+        "advogadoId": ""
+      },
+      "representantes": [
+        {
+          "id": "rep-001",
+          "nome": "Camila Ferreira Nogueira",
+          "parentesco": "Neta (Filha de Marcos)",
+          "documentos": "ID 88102450",
+          "estado": "Capaz",
+          "estadoCivil": "União Estável",
+          "regimeCasamento": "Comunhão Parcial de Bens",
+          "idCertidaoCasamento": "ID 88102455 (Escritura de União Estável)",
+          "isMeeiro": false,
+          "idProcuracao": "ID 88102460",
+          "advogadoId": "adv-102",
+          "curador": {
+            "nome": "",
+            "idTermo": "",
+            "idProcuracao": "",
+            "advogadoId": ""
+          },
+          "idCertidaoObito": "",
+          "itcdStatus": "Não Declarado",
+          "idItcd": "",
+          "conjuge": {
+            "nome": "Rafael Nogueira Alves",
+            "documentos": "ID 88102465",
+            "idProcuracao": "ID 88102468",
+            "advogadoId": "adv-102"
+          },
+          "representantes": []
+        },
+        {
+          "id": "rep-002",
+          "nome": "Pedro Henrique Ferreira",
+          "parentesco": "Neto (Filho de Marcos)",
+          "documentos": "ID 88102480",
+          "estado": "Capaz",
+          "estadoCivil": "Solteiro(a)",
+          "regimeCasamento": "Não se aplica",
+          "idCertidaoCasamento": "",
+          "isMeeiro": false,
+          "idProcuracao": "",
+          "advogadoId": "adv-102",
+          "curador": {
+            "nome": "",
+            "idTermo": "",
+            "idProcuracao": "",
+            "advogadoId": ""
+          },
+          "idCertidaoObito": "",
+          "itcdStatus": "Não Declarado",
+          "idItcd": "",
+          "conjuge": {
+            "nome": "",
+            "documentos": "",
+            "idProcuracao": "",
+            "advogadoId": ""
+          },
+          "representantes": []
+        }
+      ]
+    }
+  ],
+  "renuncia": {
+    "houveRenuncia": true,
+    "renunciantes": [
+      {
+        "herdeiroId": "herd-002",
+        "tipo": "Abdicativa",
+        "idEscritura": "ID 89001120 (Escritura Pública - Livro 84, Fls. 112)"
+      }
+    ]
+  },
+  "cessao": {
+    "houveCessao": true,
+    "idEscritura": "ID 89005540 (Escritura Pública de Cessão Onerosa)",
+    "cessionarios": [
+      {
+        "id": "cess-001",
+        "nome": "Agropecuária Boa Esperança Ltda.",
+        "documentos": "ID 89005545 (CNPJ e Contrato Social)",
+        "idProcuracao": "ID 89005550",
+        "advogadoId": "adv-101"
+      }
+    ]
+  },
+  "bens": {
+    "imoveis": [
+      {
+        "id": "imo-001",
+        "descricao": "Casa residencial situada na Rua Coronel José Augusto, nº 245, Centro, Nova Resende/MG",
+        "matricula": "14.285 - CRI de Nova Resende/MG",
+        "tipo": "Urbano",
+        "avaliado": true,
+        "idAvaliacao": "ID 92003310 (Laudo Oficial de Justiça)",
+        "idMatricula": "ID 88201100",
+        "iptu": {
+          "determinado": true,
+          "id": "ID 88201105"
+        },
+        "itr": {
+          "determinado": false,
+          "id": ""
+        },
+        "ccir": {
+          "determinado": false,
+          "id": ""
+        },
+        "car": {
+          "determinado": false,
+          "id": ""
+        }
+      },
+      {
+        "id": "imo-002",
+        "descricao": "Sítio Santa Helena, Bairro Rural Serra Verde, área de 18,50 ha, Nova Resende/MG",
+        "matricula": "9.874 - CRI de Nova Resende/MG",
+        "tipo": "Rural",
+        "avaliado": true,
+        "idAvaliacao": "ID 92003315",
+        "idMatricula": "ID 88201200",
+        "iptu": {
+          "determinado": false,
+          "id": ""
+        },
+        "itr": {
+          "determinado": true,
+          "id": "ID 88201210"
+        },
+        "ccir": {
+          "determinado": true,
+          "id": "ID 88201215"
+        },
+        "car": {
+          "determinado": true,
+          "id": ""
+        }
+      }
+    ],
+    "veiculos": [
+      {
+        "id": "vei-001",
+        "descricao": "Caminhonete Toyota Hilux CD 4x4 SRV, Diesel, Ano/Modelo 2021/2022, Prata",
+        "placa": "QXZ-4B89",
+        "renavam": "01284950311",
+        "avaliado": true,
+        "idAvaliacao": "ID 92003340",
+        "idCRLV": "ID 88301010"
+      },
+      {
+        "id": "vei-002",
+        "descricao": "Automóvel Fiat Strada Working 1.4, Flex, Ano/Modelo 2018/2018, Branca",
+        "placa": "PXY-9123",
+        "renavam": "01145029874",
+        "avaliado": false,
+        "idAvaliacao": "",
+        "idCRLV": "ID 88301020"
+      }
+    ],
+    "semoventes": [
+      {
+        "id": "sem-001",
+        "descricao": "Rebanho bovino mestiço leiteiro (vacas e novilhas registradas no IMA)",
+        "quantidade": "42 cabeças",
+        "valor": "147.000,00",
+        "avaliado": true,
+        "idAvaliacao": "ID 92003380",
+        "idDocumento": "ID 88401005 (Ficha Sanitária IMA)"
+      }
+    ],
+    "outrosBens": [
+      {
+        "id": "out-001",
+        "descricao": "Quotas sociais da empresa Café Serra de Minas Comercial Ltda. (CNPJ 12.345.678/0001-90)",
+        "quantidade": "50.000 quotas (50% do capital social)",
+        "valor": "250.000,00",
+        "avaliado": true,
+        "idAvaliacao": "ID 92003400 (Balanço Patrimonial / Avaliação Contábil)",
+        "idDocumento": "ID 88402010 (14ª Alteração Contratual JUCEMG)"
+      },
+      {
+        "id": "out-002",
+        "descricao": "Trator Agrícola Massey Ferguson MF 4275, 4x4, cabinado, ano 2019, com carreta agrícola",
+        "quantidade": "1 conjunto",
+        "valor": "165.000,00",
+        "avaliado": true,
+        "idAvaliacao": "ID 92003410",
+        "idDocumento": "ID 88402025 (Nota Fiscal de Compra)"
+      }
+    ],
+    "valoresResiduais": [
+      {
+        "id": "val-001",
+        "tipo": "Conta Bancária",
+        "instituicao": "Banco do Brasil S/A - Agência 2345-X (Poupança e CDB)",
+        "valor": "68.432,19",
+        "idDocumento": "ID 88501100 (Extrato Judicial)"
+      },
+      {
+        "id": "val-002",
+        "tipo": "Benefício Previdenciário / INSS",
+        "instituicao": "INSS - Resíduo de Aposentadoria NB 145.889.201-4",
+        "valor": "4.210,50",
+        "idDocumento": "ID 88501140 (Ofício INSS)"
+      }
+    ],
+    "dividas": [
+      {
+        "id": "div-001",
+        "credor": "Cooperativa Agropecuária de Nova Resende - COOPANOR",
+        "tipo": "Contratual",
+        "valor": "32.800,00",
+        "idDocumento": "ID 88601090 (Cédula de Produto Rural / Demonstrativo)"
+      }
+    ],
+    "houvePedidoAlvara": true,
+    "alvaras": [
+      {
+        "id": "alv-001",
+        "finalidade": "Levantamento parcial de saldo bancário no Banco do Brasil para quitação do ITCD e despesas funerárias",
+        "idRequerimento": "ID 89100200",
+        "statusDeferimento": "Deferido",
+        "idExpedicao": "ID 90100450",
+        "prestouContas": "Sim"
+      },
+      {
+        "id": "alv-002",
+        "finalidade": "Venda de 10 cabeças de gado para custeio de manutenção da propriedade rural",
+        "idRequerimento": "ID 91200800",
+        "statusDeferimento": "Deferido",
+        "idExpedicao": "ID 91800910",
+        "prestouContas": "Pendente"
+      }
+    ]
+  },
+  "documentosProcessuais": {
+    "primeirasDeclaracoes": {
+      "status": "Apresentada",
+      "id": "ID 88701000"
+    },
+    "edital": {
+      "determinado": "Sim",
+      "status": "Expedido",
+      "id": "ID 89200110",
+      "prazoDecorrido": "Sim",
+      "idDecursoPrazo": "ID 90500220"
+    },
+    "ultimasDeclaracoes": {
+      "status": "Apresentada",
+      "id": "ID 95100300"
+    },
+    "testamentosCensec": [
+      {
+        "falecidoId": "fal-001",
+        "nomeFalecido": "Antônio Augusto Ferreira",
+        "deixouTestamento": true,
+        "id": "ID 88109900 (Certidão de Abertura e Registro de Testamento)"
+      },
+      {
+        "falecidoId": "fal-002",
+        "nomeFalecido": "Helena Maria Ferreira",
+        "deixouTestamento": false,
+        "id": "ID 88109915 (Certidão Negativa CENSEC)"
+      }
+    ],
+    "sentenca": {
+      "status": "Não Proferida",
+      "id": ""
+    },
+    "transito": {
+      "status": "Não Ocorrido",
+      "id": ""
+    },
+    "manifestacaoMP": {
+      "necessaria": true,
+      "status": "Manifestado",
+      "id": "ID 95800412 (Parecer Favorável do Parquet)"
+    }
+  },
+  "custas": {
+    "situacao": "Devidas",
+    "calculada": "Sim",
+    "idCalculo": "ID 96001100",
+    "paga": "Sim",
+    "idPagamento": "ID 96204455 (GRCTJ Quitada)"
+  },
+  "documentacaoTributaria": [
+    {
+      "falecidoId": "fal-001",
+      "nomeFalecido": "Antônio Augusto Ferreira",
+      "statusItcd": "Declarado e Pago",
+      "idItcd": "ID 93100200 (Certidão de Quitação/Desoneração SEFAZ-MG)",
+      "cndMunicipal": {
+        "status": "Juntada",
+        "id": "ID 93200101"
+      },
+      "cndEstadual": {
+        "status": "Juntada",
+        "id": "ID 93200102"
+      },
+      "cndFederal": {
+        "status": "Juntada",
+        "id": "ID 93200103"
+      }
+    },
+    {
+      "falecidoId": "fal-002",
+      "nomeFalecido": "Helena Maria Ferreira",
+      "statusItcd": "Declarado e Parcelado",
+      "idItcd": "ID 93400890 (Termo de Parcelamento AF/SEFAZ-MG)",
+      "cndMunicipal": {
+        "status": "Juntada",
+        "id": "ID 93500201"
+      },
+      "cndEstadual": {
+        "status": "Juntada",
+        "id": "ID 93500202"
+      },
+      "cndFederal": {
+        "status": "Não Juntada",
+        "id": ""
+      }
+    }
+  ],
+  "observacoes": [
+    {
+      "id": "obs-001",
+      "titulo": "Pendência de Prestação de Contas do Segundo Alvará",
+      "conteudo": "O inventariante foi intimado no ID 94500110 para prestar contas dos valores obtidos com a venda parcial de semoventes autorizada no alvará de ID 91800910, encontrando-se o prazo em curso.",
+      "relevancia": "Alta"
+    },
+    {
+      "id": "obs-002",
+      "titulo": "Reserva de Quinhão do Herdeiro Incapaz",
+      "conteudo": "O Ministério Público manifestou-se favoravelmente ao plano de partilha (ID 95800412), condicionando a expedição de formal de partilha à comprovação do depósito da quota-parte líquida pertencente ao incapaz Lucas Gabriel Ferreira em conta judicial remunerada.",
+      "relevancia": "Média"
+    },
+    {
+      "id": "obs-003",
+      "titulo": "Habilitação de Crédito da COOPANOR",
+      "conteudo": "Todos os herdeiros e o curador especial concordaram expressamente com a reserva de bens para pagamento da dívida junto à cooperativa COOPANOR (ID 95200180).",
+      "relevancia": "Baixa"
+    }
+  ]
+}

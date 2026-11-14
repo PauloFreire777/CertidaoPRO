@@ -1,14 +1,26 @@
 {
   "name": "certidaopro-novo",
   "version": "0.1.0",
+  "description": "Sistema de Emissão de Certidão de Regularidade de Inventário",
+  "author": "CertidãoPRO",
   "private": true,
+  "main": "electron.js",
   "scripts": {
     "serve": "vue-cli-service serve",
     "build": "vue-cli-service build",
-    "lint": "vue-cli-service lint"
+    "lint": "vue-cli-service lint",
+    "electron:serve": "npm run build && npx electron electron.js",
+    "electron:build": "npm run build && electron-builder",
+    "copy-chromium": "node copy-chromium.js",
+    "build:portable": "npm run copy-chromium && npm run build && electron-builder --win portable",
+    "ensure-chromium": "node ensure-chromium.js",
+    "postinstall": "electron-builder install-app-deps"
   },
   "dependencies": {
+    "@vue/compat": "^3.5.18",
     "core-js": "^3.8.3",
+    "lucide": "^0.395.0",
+    "puppeteer": "^24.15.0",
     "vue": "^3.2.13"
   },
   "devDependencies": {
@@ -17,27 +29,49 @@
     "@vue/cli-plugin-babel": "~5.0.0",
     "@vue/cli-plugin-eslint": "~5.0.0",
     "@vue/cli-service": "~5.0.0",
+    "electron": "^25.3.1",
+    "electron-builder": "^24.6.3",
     "eslint": "^7.32.0",
     "eslint-plugin-vue": "^8.0.3"
   },
-  "eslintConfig": {
-    "root": true,
-    "env": {
-      "node": true
+  "build": {
+    "appId": "com.certidaopro.app",
+    "productName": "CertidãoPRO",
+    "directories": {
+      "output": "dist-electron"
     },
-    "extends": [
-      "plugin:vue/vue3-essential",
-      "eslint:recommended"
+    "files": [
+      "dist/**/*",
+      "electron.js",
+      "preload.js",
+      "package.json",
+      "node_modules/**/*",
+      "chromium-bin/**/*"
     ],
-    "parserOptions": {
-      "parser": "@babel/eslint-parser"
+    "asarUnpack": [
+      "node_modules/puppeteer/**/*",
+      "node_modules/@puppeteer/**/*",
+      "node_modules/puppeteer-core/**/*",
+      "chromium-bin/**/*"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "public/favicon.ico"
     },
-    "rules": {}
-  },
-  "browserslist": [
-    "> 1%",
-    "last 2 versions",
-    "not dead",
-    "not ie 11"
-  ]
+    "portable": {
+      "artifactName": "CertidaoPRO-Portable-${version}.exe",
+      "unpackDirName": "CertidaoPRO-Portable"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    }
+  }
 }
